@@ -13,17 +13,11 @@
     <depends>com.intellij.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-
-        <localInspection language="JAVA"
-                         bundle="messages.InspectionBundle"
-                         key="inspection.comparing.string.references.display.name"
-                         groupPath="Java"
-                         groupBundle="messages.InspectionsBundle"
-                         groupKey="group.names.code.style.issues"
-                         enabledByDefault="true"
-                         level="WARNING"
-                         implementationClass="com.example.count.swapEqual"/>
-
+        <intentionAction>
+            <language>JAVA</language> <!-- available in 2022.3 and later -->
+            <className>com.example.count.swapEqual</className>
+            <category>SDK intentions</category>
+        </intentionAction>
     </extensions>
 
     <actions>

@@ -1,82 +1,83 @@
 package com.example.count;
+// Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 
-import com.intellij.codeInspection.AbstractBaseJavaLocalInspectionTool;
-import com.intellij.codeInspection.LocalQuickFix;
-import com.intellij.codeInspection.ProblemDescriptor;
-import com.intellij.psi.PsiBinaryExpression;
-import com.intellij.codeInspection.ProblemsHolder;
+import com.intellij.codeInsight.intention.IntentionAction;
+import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.tree.IElementType;
-import com.intellij.psi.util.PsiTypesUtil;
+import com.intellij.psi.codeStyle.CodeStyleManager;
+import com.intellij.psi.util.PsiTreeUtil;
+import com.intellij.util.IncorrectOperationException;
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
-final class swapEqual extends AbstractBaseJavaLocalInspectionTool {
-    private final ReplaceWithEqualsswapped myQuickFix = new ReplaceWithEqualsswapped();
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Implements an intention action to replace a ternary statement with if-then-else.
+ */
+@NonNls
+final class swapEqual extends PsiElementBaseIntentionAction implements IntentionAction {
+
+    /**
+     * Checks whether this intention is available at the caret offset in file - the caret must sit just before a "?"
+     * character in a ternary statement. If this condition is met, this intention's entry is shown in the available
+     * intentions list.
+     *
+     * <p>Note: this method must do its checks quickly and return.</p>
+     *
+     * @param project a reference to the Project object being edited.
+     * @param editor  a reference to the object editing the project source
+     * @param element a reference to the PSI element currently under the caret
+     * @return {@code true} if the caret is in a literal string element, so this functionality should be added to the
+     * intention menu or {@code false} for all other types of caret positions
+     */
+    public boolean isAvailable(@NotNull Project project, Editor editor, @Nullable PsiElement element) {
+        // Quick sanity check
+        if (element == null) {
+            return false;
+        }
+
+        // Is this a token of type representing an "==" character?
+        if (element instanceof PsiJavaToken token) {
+            if (token.getTokenType() != JavaTokenType.EQEQ) {
+                return false;
+            }
+            return token.getParent() instanceof PsiBinaryExpression;
+        }
+        return false;
+    }
+
+    /**
+     * @param project a reference to the Project object being edited.
+     * @param editor  a reference to the object editing the project source
+     * @param element a reference to the PSI element currently under the caret
+     * @throws IncorrectOperationException Thrown by underlying (PSI model) write action context
+     *                                     when manipulation of the PSI tree fails.
+     */
+    public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element)
+            throws IncorrectOperationException {
+        //swapExpressionSides of ==
+        PsiBinaryExpression binaryExpression = (PsiBinaryExpression) element.getParent();
+        PsiExpression lhs = binaryExpression.getLOperand();
+        PsiExpression rhs = binaryExpression.getROperand();
+        PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
+        if(rhs == null) return;
+        PsiExpression newExpression = factory.createExpressionFromText(rhs.getText() + " == " + lhs.getText(), binaryExpression);
+        binaryExpression.replace(newExpression);
+
+    }
+
 
     @NotNull
-    @Override
-    public PsiElementVisitor buildVisitor(@NotNull final ProblemsHolder holder, boolean isOnTheFly) {
-        return new JavaElementVisitor() {
-            @Override
-            public void visitBinaryExpression(@NotNull PsiBinaryExpression expression) {
-                super.visitBinaryExpression(expression);
-
-                IElementType opSign = expression.getOperationTokenType();
-                if (opSign == JavaTokenType.EQEQ) {
-                    PsiExpression lOperand = expression.getLOperand();
-                    PsiExpression rOperand = expression.getROperand();
-                    if (rOperand == null) {
-                        return;
-                    }
-                    PsiType lType = lOperand.getType();
-                    PsiType rType = rOperand.getType();
-                    if (lType == null || rType == null) {
-                        return;
-                    }
-                    holder.registerProblem(expression, InspectionBundle.message("inspection.comparing.string.references.problem.descriptor"), myQuickFix);
-                }
-            }
-        };
+    public String getText() {
+        return getFamilyName();
     }
 
-    private static class ReplaceWithEqualsswapped implements LocalQuickFix {
 
-        @NotNull
-        @Override
-        public String getName() {
-            return InspectionBundle.message("inspection.comparing.string.references.use.quickfix");
-        }
-
-        public void applyFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) {
-            // binaryExpression holds a PSI expression of the form "x == y",
-            // which needs to be swapped to "y == x"
-            PsiBinaryExpression binaryExpression = (PsiBinaryExpression) descriptor.getPsiElement();
-            IElementType opSign = binaryExpression.getOperationTokenType();
-            PsiExpression lExpr = binaryExpression.getLOperand();
-            PsiExpression rExpr = binaryExpression.getROperand();
-            if (rExpr == null) {
-                return;
-            }
-            PsiExpression newLExpr, newRExpr;
-            if (opSign == JavaTokenType.EQEQ) {
-                newLExpr = rExpr;
-                newRExpr = lExpr;
-            } else {
-                newLExpr = lExpr;
-                newRExpr = rExpr;
-            }
-
-            PsiElementFactory factory = JavaPsiFacade.getInstance(project).getElementFactory();
-            PsiBinaryExpression newBinaryExpression = (PsiBinaryExpression) factory.createExpressionFromText(
-                    newLExpr.getText() + opSign.toString() + newRExpr.getText(), binaryExpression
-            );
-            binaryExpression.replace(newBinaryExpression);
-        }
-
-        @NotNull
-        public String getFamilyName() {
-            return getName();
-        }
-
+    @NotNull
+    public String getFamilyName() {
+        return "By zpyyy: flip ==";
     }
+
 }
