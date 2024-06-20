@@ -1,8 +1,8 @@
 <idea-plugin>
     <id>com.example.plugin.equal-count</id>
     <name>Equal Count</name>
-    <version>1.0</version>
-    <vendor email="pyzhang086@gmail.com" url="https://example.com">Your Company</vendor>
+    <version>1.1</version>
+    <vendor email="pyzhang086@gmail.com"> </vendor>
 
     <description><![CDATA[
     This plugin provides a tool to count the number of '==' operators in Java code.
@@ -13,10 +13,17 @@
     <depends>com.intellij.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <intentionAction>
-            <className>com.example.count.EqualCountIntentionAction</className>
-            <category>Java</category>
-        </intentionAction>
+
+        <localInspection language="JAVA"
+                         bundle="messages.InspectionBundle"
+                         key="inspection.comparing.string.references.display.name"
+                         groupPath="Java"
+                         groupBundle="messages.InspectionsBundle"
+                         groupKey="group.names.code.style.issues"
+                         enabledByDefault="true"
+                         level="WARNING"
+                         implementationClass="com.example.count.swapEqual"/>
+
     </extensions>
 
     <actions>
